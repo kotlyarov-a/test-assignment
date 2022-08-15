@@ -30,6 +30,7 @@ export class FilterCategoriesDto {
   page?: number;
 
   @IsString()
+  @IsOptional()
   sort?: "-active" | "-active ASC" | "-active DESC" |
     "-slug" | "-slug ASC" | "-slug DESC" |
     "-name" | "-name ASC" | "-name DESC" |

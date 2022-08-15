@@ -117,7 +117,7 @@ describe('TEST CRUD API (e2e)', () => {
 });
 
 
-describe.only('TEST filters(e2e)', () => {
+describe('TEST filters(e2e)', () => {
   let app: INestApplication;
 
   let newCategories: CategoryDto[] = [];
@@ -247,16 +247,17 @@ describe.only('TEST filters(e2e)', () => {
   // Например active=1 или active=true отдаем только активные категории
   // active=0 или active=false отдаем только неактивные категории
   it('by active', async () => {
+    let pageSize = 8;
     await run(['true', '1'], true);
     await run(['false', '0'], false);
     async function run(searchStrings: string[], value: boolean) {
       for (let i = 0; i < searchStrings.length; i++) {
         const searchString = searchStrings[i];
         const response = await request(app.getHttpServer())
-          .get(`/categories/?active=` + encodeURIComponent(searchString))
+          .get(`/categories/?active=` + encodeURIComponent(searchString) + `&pageSize=${pageSize}`)
           .expect(200);
         let categories = JSON.parse(response.text);
-        expect(categories.length).toBe(newCategories.filter(c => c.active === value).length);
+        expect(categories.length).toBe(newCategories.filter(c => c.active === value).slice(0, pageSize).length);
       }
     }
   });
@@ -336,5 +337,26 @@ describe.only('TEST filters(e2e)', () => {
     let categories2 = JSON.parse(response2.text);
     expect(categories2.pop().slug).toBe('cat5');
   });
+
+  it('clear db', async () => {
+    const response1 = await request(app.getHttpServer())
+      .get('/categories/?pageSize=9')
+      .expect(200);
+    let categories1 = JSON.parse(response1.text);
+    await deleteCategories(categories1)
+    const response2 = await request(app.getHttpServer())
+      .get('/categories/?pageSize=9')
+      .expect(200);
+    let categories2 = JSON.parse(response2.text);
+    await deleteCategories(categories2)
+
+    async function deleteCategories(categories) {
+      for (const category of categories) {
+        const response = await request(app.getHttpServer())
+          .delete('/categories/' + category.id)
+          .expect(200);
+      }
+    }
+  })
 
 });
